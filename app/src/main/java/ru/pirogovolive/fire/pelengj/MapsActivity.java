@@ -3,11 +3,6 @@ package ru.pirogovolive.fire.pelengj;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -17,7 +12,6 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -27,67 +21,56 @@ import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.places.GeoDataClient;
-import com.google.android.gms.location.places.PlaceDetectionClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
-    private static final String TAG = MapsActivity.class.getSimpleName();
-    private static final int DEFAULT_ZOOM = 15;
+
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
-
-
     private static final String KEY_LOCATION = "location";
-    private static final float SMOOTHING_FACTOR_COMPASS = 0.5f;
+    private static final int DEFAULT_ZOOM = 15;
+    private static final String TAG = MapsActivity.class.getSimpleName();
+    public static GoogleMap mMap;
+    public Polyline polyline0, polyline1;
+    public Location mLastKnownLocation;
+    public float compass_last_measured_bearing;
+    public LatLng firstPoint;
+    public float current_measured_bearing;
     /**
      * Initialize the Sensors (Gravity and magnetic field, required as a compass
      * sensor)
      */
     float[] mGravity = null;
     float[] mMagnetic = null;
-    private Polyline polyline0, polyline1;
-    private GoogleMap mMap;
-    private CameraPosition mCameraPosition;
-    private GeoDataClient mGeoDataClient;
-    private PlaceDetectionClient mPlaceDetectionClient;
+    private Thread thread;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private boolean mLocationPermissionGranted;
-    private Location mLastKnownLocation;
-    private boolean secondAz;
-    private LocationManager lm;
-    private float compass_last_measured_bearing;
     private Context ctx;
-    private LatLng firstPoint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // Retrieve location and camera position from saved instance state.
-        //if (savedInstanceState != null) {
-        //    mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
-        //mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
-        //}
+        if (savedInstanceState != null) {
+            mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
+            //mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
+        }
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_maps);
         ctx = this;
         // Construct a GeoDataClient.
         //mGeoDataClient = Places.getGeoDataClient(this, null);
-        initSensors();
         getDeviceLocation();
         // Construct a PlaceDetectionClient.
         //mPlaceDetectionClient = Places.getPlaceDetectionClient(this, null);
@@ -135,120 +118,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    private void initSensors() {
-
-        //LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        Sensor mSensorGravity = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
-        Sensor mSensorMagneticField = sensorManager
-                .getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        SensorEventListener mSensorEventListener;
-        mSensorEventListener = new SensorEventListener() {
-            @Override
-            public void onAccuracyChanged(Sensor sensor, int accuracy) {
-                Toast.makeText(ctx, "Accuracy is " + accuracy, Toast.LENGTH_LONG).show();
-            }
-
-            //@Override
-            public void onSensorChanged(SensorEvent event) {
-
-                if (event.sensor.getType() == Sensor.TYPE_GRAVITY) {
-
-                    mGravity = event.values.clone();
-
-                } else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-
-                    mMagnetic = event.values.clone();
-
-                }
-
-                if (mGravity != null && mMagnetic != null) {
-                    /* Create rotation Matrix */
-                    float[] rotationMatrix = new float[9];
-                    if (SensorManager.getRotationMatrix(rotationMatrix, null,
-                            mGravity, mMagnetic)) {
-
-                        /* Compensate device orientation */
-                        // http://android-developers.blogspot.de/2010/09/one-screen-turn-deserves-another.html
-                        float[] remappedRotationMatrix = new float[9];
-                        switch (getWindowManager().getDefaultDisplay()
-                                .getRotation()) {
-                            case Surface.ROTATION_0:
-                                SensorManager.remapCoordinateSystem(rotationMatrix,
-                                        SensorManager.AXIS_X, SensorManager.AXIS_Y,
-                                        remappedRotationMatrix);
-                                break;
-                            case Surface.ROTATION_90:
-                                SensorManager.remapCoordinateSystem(rotationMatrix,
-                                        SensorManager.AXIS_Y,
-                                        SensorManager.AXIS_MINUS_X,
-                                        remappedRotationMatrix);
-                                break;
-                            case Surface.ROTATION_180:
-                                SensorManager.remapCoordinateSystem(rotationMatrix,
-                                        SensorManager.AXIS_MINUS_X,
-                                        SensorManager.AXIS_MINUS_Y,
-                                        remappedRotationMatrix);
-                                break;
-                            case Surface.ROTATION_270:
-                                SensorManager.remapCoordinateSystem(rotationMatrix,
-                                        SensorManager.AXIS_MINUS_Y,
-                                        SensorManager.AXIS_X, remappedRotationMatrix);
-                                break;
-                        }
-
-                        /* Calculate Orientation */
-                        float results[] = new float[3];
-                        SensorManager.getOrientation(remappedRotationMatrix,
-                                results);
-
-                        /* Get measured value */
-                        float current_measured_bearing = (float) (results[0] * 180 / Math.PI);
-                        if (current_measured_bearing < 0) {
-                            current_measured_bearing += 360;
-                        }
-
-                        /* Smooth values using a 'Low Pass Filter' */
-                        current_measured_bearing = current_measured_bearing
-                                + SMOOTHING_FACTOR_COMPASS
-                                * (current_measured_bearing - compass_last_measured_bearing);
-
-                        /* Update normal output */
-                        TextView visual_compass_value = (TextView) findViewById(R.id.tx_azimuth);
-                        visual_compass_value.setText("Azimuth is " + String.valueOf(Math
-                                .round(current_measured_bearing))
-                                + getString(R.string.degrees));
-
-                        /*
-                         * Update variables for next use (Required for Low Pass
-                         * Filter)
-                         */
-                        compass_last_measured_bearing = current_measured_bearing;
-
-                    }
-                }
-            }
-        };
-        /* Initialize the gravity sensor */
-        if (mSensorGravity != null) {
-            Log.i(TAG, "Gravity sensor available. (TYPE_GRAVITY)");
-            sensorManager.registerListener(mSensorEventListener,
-                    mSensorGravity, 1000000, 1000000);// SensorManager.SENSOR_STATUS_ACCURACY_HIGH);
-        } else {
-            Log.i(TAG, "Gravity sensor unavailable. (TYPE_GRAVITY)");
-        }
-
-        /* Initialize the magnetic field sensor */
-        if (mSensorMagneticField != null) {
-            Log.i(TAG, "Magnetic field sensor available. (TYPE_MAGNETIC_FIELD)");
-            sensorManager.registerListener(mSensorEventListener,
-                    mSensorMagneticField, 1000000, 1000000);//SensorManager.SENSOR_STATUS_ACCURACY_HIGH);
-        } else {
-            Log.i(TAG,
-                    "Magnetic field sensor unavailable. (TYPE_MAGNETIC_FIELD)");
-        }
-
+    protected void onResume() {
+        super.onResume();
+        SensorsUtils.InitMagnetSensors(this);
+        updateBearing();
     }
+
 
     /**
      * Saves the state of the map when the activity is paused.
@@ -257,7 +132,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onSaveInstanceState(Bundle outState) {
         if (mMap != null) {
             //outState.putParcelable(KEY_CAMERA_POSITION, mMap.getCameraPosition());
-            //outState.putParcelable(KEY_LOCATION, mLastKnownLocation);
+            outState.putParcelable(KEY_LOCATION, mLastKnownLocation);
             super.onSaveInstanceState(outState);
         }
     }
@@ -290,10 +165,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 View infoWindow = getLayoutInflater().inflate(R.layout.custom_info_contents,
                         (FrameLayout) findViewById(R.id.map), false);
 
-                TextView title = ((TextView) infoWindow.findViewById(R.id.title));
+                TextView title = infoWindow.findViewById(R.id.title);
                 title.setText(marker.getTitle());
 
-                TextView snippet = ((TextView) infoWindow.findViewById(R.id.snippet));
+                TextView snippet = infoWindow.findViewById(R.id.snippet);
                 snippet.setText(marker.getSnippet());
 
                 return infoWindow;
@@ -344,42 +219,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (SecurityException e) {
             Log.e("Exception: %s", e.getMessage());
         }
-    }
-
-    private void drawTheLine(double dist) {
-        //TODO check accuracy and bearing accuracy
-        LatLng point0 = new LatLng(mLastKnownLocation.getLatitude(), mLastKnownLocation.getLongitude());
-        double b = Math.round(compass_last_measured_bearing);//mLastKnownLocation.getBearing();
-        //b = 54;
-        LatLng point1 = new GeoUtils().LatLonCalc(point0, b, dist);
-        PolylineOptions polylineOptions = new PolylineOptions()
-                .add(point0).add(point1)
-                .color(Color.MAGENTA).width(4);
-        if (polyline0 == null) {
-            firstPoint = point0;
-            polyline0 = mMap.addPolyline(polylineOptions);
-            addMarker(point0, "0"+getMarkerName(point0), String.valueOf(b));
-
-        } else if (polyline1 != null) {
-
-            polyline1.remove();
-            polyline1 = mMap.addPolyline(polylineOptions);
-            addMarker(point0, "1"+getMarkerName(point0), String.valueOf(b));
-
-        } else {
-            polyline1 = mMap.addPolyline(polylineOptions);
-            GeoUtils g = new GeoUtils();
-            addMarker(point0, "1"+getMarkerName(point0), String.valueOf(b) + " " + String.valueOf(g.GetDistance(firstPoint, point0)) + " " + String.valueOf(g.ComputeHeading(firstPoint, point0)));
-
-        }
-
-    }
-    private String getMarkerName(LatLng p){
-        return String.valueOf(p.latitude)+ " "+ String.valueOf(p.longitude);
-    }
-    private void addMarker(LatLng p, String name, String addText) {
-        Marker marker = mMap.addMarker(new MarkerOptions().position(p)
-                .title(name).snippet(addText));
     }
 
     /**
@@ -438,7 +277,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (mLocationPermissionGranted) {
                 mMap.setMyLocationEnabled(true);
                 mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                setAcuracy();
+                setAccuracy();
             } else {
                 mMap.setMyLocationEnabled(false);
                 mMap.getUiSettings().setMyLocationButtonEnabled(false);
@@ -450,24 +289,56 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void setAcuracy() {
+    /**
+     * Update Bearing TextView time period
+     */
+    private void updateBearing() {
+        thread = new Thread() {
 
-        TextView tAcuracy = (TextView) findViewById(R.id.tx_acuracy);
-        TextView tAzimuth = (TextView) findViewById(R.id.tx_azimuth);
+            @Override
+            public void run() {
+                try {
+                    while (!thread.isInterrupted()) {
+                        Thread.sleep(1000);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                /* Update normal output */
+                                TextView visual_compass_value = findViewById(R.id.tx_azimuth);
+                                visual_compass_value.setText("Azimuth is " + String.valueOf(Math
+                                        .round(current_measured_bearing))
+                                        + getString(R.string.degrees));
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                    Log.d(TAG, "Something went wrong during bearing update");
+                }
+            }
+        };
 
-        //TextView tAzAcuracy = (TextView) findViewById(R.id.tx_aziacuracy);
+        thread.start();
+    }
+
+    /**
+     * set textview Accuracy
+     */
+    private void setAccuracy() {
+
+        TextView tAccuracy = findViewById(R.id.tx_acuracy);
         if (mLastKnownLocation != null) {
-            tAcuracy.setText(getResources().getString(R.string.t_accuracy) + String.valueOf(mLastKnownLocation.getAccuracy()));
-            //tAzimuth.setText("Azimuth is "+String.valueOf(compass_last_measured_bearing));
-            //tAzAcuracy.setText(getResources().getString(R.string.t_az_accuracy)+mLastKnownLocation.getBearingAccuracyDegrees());
+            tAccuracy.setText(getResources().getString(R.string.t_accuracy) + String.valueOf(mLastKnownLocation.getAccuracy()));
         }
 
     }
 
+    /**
+     * Button clean map
+     */
     public void onClickMapClean(View v) {
         mMap.clear();
-        Button btn = (Button) findViewById(R.id.btn_getazimuth);
-        Button btnClean = (Button) findViewById(R.id.btn_clean);
+        Button btn = findViewById(R.id.btn_getazimuth);
+        Button btnClean = findViewById(R.id.btn_clean);
 
         btn.setText(getResources().getString(R.string.btn_get_azimuth));
         btnClean.setEnabled(false);
@@ -475,11 +346,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         polyline1 = null;
     }
 
+    /**
+     * Button Get azimuth
+     */
     public void onClickGetAzimuth(View v) {
-        Button btn = (Button) findViewById(R.id.btn_getazimuth);
-        Button btnClean = (Button) findViewById(R.id.btn_clean);
+        Button btn = findViewById(R.id.btn_getazimuth);
+        Button btnClean = findViewById(R.id.btn_clean);
 
-        ImageView img = (ImageView) findViewById(R.id.img_arrow);
+        ImageView img = findViewById(R.id.img_arrow);
 
         if (btn.getText() == getResources().getString(R.string.btn_get_azimuth)) {
             //Toast.makeText(this, "Clicked on Button", Toast.LENGTH_LONG).show();
@@ -488,20 +362,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             img.setVisibility(View.VISIBLE);
             btn.setText(getResources().getString(R.string.btn_set));
-            setAcuracy();
+            setAccuracy();
         } else if (btn.getText() == getResources().getString(R.string.btn_set)) {
             btnClean.setEnabled(true);
 
             img.setVisibility(View.INVISIBLE);
             btn.setText(getResources().getString(R.string.btn_get_sazimuth));
-            drawTheLine(100);
-            setAcuracy();
+            MapUtils.DrawTheLine(this, 100);
+            setAccuracy();
 
         } else if (btn.getText() == getResources().getString(R.string.btn_get_sazimuth)) {
             img.setVisibility(View.VISIBLE);
             btn.setText(getResources().getString(R.string.btn_set));
             //secondAz=true;
-            setAcuracy();
+            setAccuracy();
             btnClean.setEnabled(false);
 
         }
@@ -513,12 +387,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     private void enableGetAzimuthBtn() {
         if (mLastKnownLocation.getAccuracy() < 14) {
-            Button btn = (Button) findViewById(R.id.btn_getazimuth);
+            Button btn = findViewById(R.id.btn_getazimuth);
             btn.setEnabled(true);
         }
 
     }
-
 
 
 }
