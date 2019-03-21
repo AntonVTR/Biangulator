@@ -116,7 +116,7 @@ class UiUtils {
          * device. The result of the permission request is handled by a callback,
          * onRequestPermissionsResult.
          */
-        if (ContextCompat.checkSelfPermission(ctx.getApplicationContext(),
+        if (ContextCompat.checkSelfPermission(ctx,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             MapsActivity.mLocationPermissionGranted = true;

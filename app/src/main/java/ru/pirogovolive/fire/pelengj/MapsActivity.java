@@ -46,14 +46,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public Polyline polyline0, polyline1;
     public float compass_last_measured_bearing;
     public LatLng firstPoint;
-    private Context ctx;
-    private MapsActivity activity;
     /**
      * Initialize the Sensors (Gravity and magnetic field, required as a compass
      * sensor)
      */
     float[] mGravity = null;
     float[] mMagnetic = null;
+    private Context ctx;
+    private MapsActivity activity;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private UiUtils ui;
 
@@ -228,7 +228,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ui = new UiUtils(activity, ctx);
         // Retrieve location and camera position from saved instance state.
         if (savedInstanceState != null) {
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
@@ -238,6 +237,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_maps);
         ctx = this;
+        activity = this;
+        ui = new UiUtils(activity, ctx);
         // Construct a GeoDataClient.
         //mGeoDataClient = Places.getGeoDataClient(this, null);
         getDeviceLocation();
