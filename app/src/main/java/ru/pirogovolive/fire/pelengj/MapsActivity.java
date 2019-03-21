@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,99 +30,38 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import static ru.pirogovolive.fire.pelengj.UiUtils.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
+
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
 
-    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final String KEY_LOCATION = "location";
     private static final int DEFAULT_ZOOM = 15;
     private static final String TAG = MapsActivity.class.getSimpleName();
     public static GoogleMap mMap;
+    public static Location mLastKnownLocation;
+    public static float current_measured_bearing;
+    static boolean mLocationPermissionGranted;
     public Polyline polyline0, polyline1;
-    public Location mLastKnownLocation;
     public float compass_last_measured_bearing;
     public LatLng firstPoint;
-    public float current_measured_bearing;
+    private Context ctx;
+    private MapsActivity activity;
     /**
      * Initialize the Sensors (Gravity and magnetic field, required as a compass
      * sensor)
      */
     float[] mGravity = null;
     float[] mMagnetic = null;
-    private Thread thread;
     private FusedLocationProviderClient mFusedLocationProviderClient;
-    private boolean mLocationPermissionGranted;
-    private Context ctx;
+    private UiUtils ui;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // Retrieve location and camera position from saved instance state.
-        if (savedInstanceState != null) {
-            mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
-            //mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
-        }
-
-        // Retrieve the content view that renders the map.
-        setContentView(R.layout.activity_maps);
-        ctx = this;
-        // Construct a GeoDataClient.
-        //mGeoDataClient = Places.getGeoDataClient(this, null);
-        getDeviceLocation();
-        // Construct a PlaceDetectionClient.
-        //mPlaceDetectionClient = Places.getPlaceDetectionClient(this, null);
-
-        // Construct a FusedLocationProviderClient.
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        // Define a listener that responds to location updates
-        LocationListener locationListener = new LocationListener() {
-            public void onLocationChanged(Location location) {
-                // Called when a new location is found by the network location provider.
-                //makeUseOfNewLocation(location);
-                mLastKnownLocation = location;
-                updateLocationUI();
-            }
-
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-            }
-
-            public void onProviderEnabled(String provider) {
-            }
-
-            public void onProviderDisabled(String provider) {
-            }
-        };
-
-// Register the listener with the Location Manager to receive location updates
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-        // Build the map.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-
-        //TODO create dialog to enter point0, bearing and share it. via
-
-    }
 
     protected void onResume() {
         super.onResume();
         SensorsUtils.InitMagnetSensors(this);
-        updateBearing();
     }
-
 
     /**
      * Saves the state of the map when the activity is paused.
@@ -136,7 +74,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             super.onSaveInstanceState(outState);
         }
     }
-
 
     /**
      * Manipulates the map when it's available.
@@ -176,7 +113,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         });
 
         // Prompt the user for permission.
-        getLocationPermission();
+        ui.getLocationPermission();
 
         // Turn on the My Location layer and the related control on the map.
         //updateLocationUI();
@@ -222,26 +159,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     /**
-     * Prompts the user for permission to use the device location.
-     */
-    private void getLocationPermission() {
-        /*
-         * Request location permission, so that we can get the location of the
-         * device. The result of the permission request is handled by a callback,
-         * onRequestPermissionsResult.
-         */
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
-                android.Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED) {
-            mLocationPermissionGranted = true;
-        } else {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }
-    }
-
-    /**
      * Handles the result of the request for location permissions.
      */
     @Override
@@ -258,79 +175,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             }
         }
-        updateLocationUI();
     }
 
-
-    /**
-     * Updates the map's UI settings based on whether the user has granted location permission.
-     */
-    private void updateLocationUI() {
-
-        if (mLastKnownLocation.hasAccuracy()) {
-            enableGetAzimuthBtn();
-        }
-        if (mMap == null) {
-            return;
-        }
-        try {
-            if (mLocationPermissionGranted) {
-                mMap.setMyLocationEnabled(true);
-                mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                setAccuracy();
-            } else {
-                mMap.setMyLocationEnabled(false);
-                mMap.getUiSettings().setMyLocationButtonEnabled(false);
-                mLastKnownLocation = null;
-                getLocationPermission();
-            }
-        } catch (SecurityException e) {
-            Log.e("Exception: %s", e.getMessage());
-        }
-    }
-
-    /**
-     * Update Bearing TextView time period
-     */
-    private void updateBearing() {
-        thread = new Thread() {
-
-            @Override
-            public void run() {
-                try {
-                    while (!thread.isInterrupted()) {
-                        Thread.sleep(1000);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                /* Update normal output */
-                                TextView visual_compass_value = findViewById(R.id.tx_azimuth);
-                                visual_compass_value.setText("Azimuth is " + String.valueOf(Math
-                                        .round(current_measured_bearing))
-                                        + getString(R.string.degrees));
-                            }
-                        });
-                    }
-                } catch (InterruptedException e) {
-                    Log.d(TAG, "Something went wrong during bearing update");
-                }
-            }
-        };
-
-        thread.start();
-    }
-
-    /**
-     * set textview Accuracy
-     */
-    private void setAccuracy() {
-
-        TextView tAccuracy = findViewById(R.id.tx_acuracy);
-        if (mLastKnownLocation != null) {
-            tAccuracy.setText(getResources().getString(R.string.t_accuracy) + String.valueOf(mLastKnownLocation.getAccuracy()));
-        }
-
-    }
 
     /**
      * Button clean map
@@ -362,36 +208,67 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             img.setVisibility(View.VISIBLE);
             btn.setText(getResources().getString(R.string.btn_set));
-            setAccuracy();
         } else if (btn.getText() == getResources().getString(R.string.btn_set)) {
             btnClean.setEnabled(true);
 
             img.setVisibility(View.INVISIBLE);
             btn.setText(getResources().getString(R.string.btn_get_sazimuth));
             MapUtils.DrawTheLine(this, 100);
-            setAccuracy();
 
         } else if (btn.getText() == getResources().getString(R.string.btn_get_sazimuth)) {
             img.setVisibility(View.VISIBLE);
             btn.setText(getResources().getString(R.string.btn_set));
             //secondAz=true;
-            setAccuracy();
             btnClean.setEnabled(false);
 
         }
 
     }
 
-    /**
-     * Enable button get azimuth if accuracy is better then 14 it means you have proper GPS cover
-     */
-    private void enableGetAzimuthBtn() {
-        if (mLastKnownLocation.getAccuracy() < 14) {
-            Button btn = findViewById(R.id.btn_getazimuth);
-            btn.setEnabled(true);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        ui = new UiUtils(activity, ctx);
+        // Retrieve location and camera position from saved instance state.
+        if (savedInstanceState != null) {
+            mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
+            //mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
+
+        // Retrieve the content view that renders the map.
+        setContentView(R.layout.activity_maps);
+        ctx = this;
+        // Construct a GeoDataClient.
+        //mGeoDataClient = Places.getGeoDataClient(this, null);
+        getDeviceLocation();
+        // Construct a PlaceDetectionClient.
+        //mPlaceDetectionClient = Places.getPlaceDetectionClient(this, null);
+
+        // Construct a FusedLocationProviderClient.
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        // Define a listener that responds to location updates
+        LocationListener locationListener = (new SensorsUtils(ui));
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        // Build the map.
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+        //TODO create dialog to enter point0, bearing and share it. via
 
     }
 
 
 }
+

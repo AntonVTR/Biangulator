@@ -12,8 +12,9 @@
     <string name="btn_get_azimuth">Get azimuth</string>
     <string name="btn_get_sazimuth">Get second azi</string>
     <string name="btn_set">Set azimuth</string>
-    <string name="toast_cant_define">I can\'t define your location please check the settings or claer sky</string>
-    <string name="t_accuracy">Accuracy: </string>
+    <string name="toast_cant_define">I can\'t define your location please check the settings or avaliabitity of clear sky</string>
+    <string name="t_accuracy">Accuracy: %1$d</string>
+    <string name="t_azimuth">Azimuth: %1$d %2$s</string>
     <string name="t_az_accuracy">Azim accur: </string>
     <string name="degrees">°</string>
 

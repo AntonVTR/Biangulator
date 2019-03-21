@@ -12,7 +12,7 @@ class MapUtils {
 
     static void DrawTheLine(MapsActivity mapsActivity, double dist) {
         //TODO check accuracy and bearing accuracy
-        LatLng point0 = new LatLng(mapsActivity.mLastKnownLocation.getLatitude(), mapsActivity.mLastKnownLocation.getLongitude());
+        LatLng point0 = new LatLng(MapsActivity.mLastKnownLocation.getLatitude(), MapsActivity.mLastKnownLocation.getLongitude());
         double b = Math.round(mapsActivity.compass_last_measured_bearing);//mLastKnownLocation.getBearing();
         //b = 54;
         LatLng point1 = GeoUtils.LatLonCalc(point0, b, dist);

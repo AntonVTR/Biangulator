@@ -5,13 +5,20 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.os.Bundle;
 import android.util.Log;
 
 
-class SensorsUtils {
+class SensorsUtils implements LocationListener {
     private static final float SMOOTHING_FACTOR_COMPASS = 0.1f;
     private static final String TAG = SensorsUtils.class.getSimpleName();
+    private final UiUtils ui;
 
+    SensorsUtils(UiUtils ui) {
+        this.ui = ui;
+    }
 
     static void InitMagnetSensors(final MapsActivity mapsActivity) {
 
@@ -49,22 +56,22 @@ class SensorsUtils {
                                 results);
 
                         /* Get measured value */
-                        mapsActivity.current_measured_bearing = (float) Math.toDegrees(results[0]);
-                        if (mapsActivity.current_measured_bearing < 0) {
-                            mapsActivity.current_measured_bearing += 360;
+                        MapsActivity.current_measured_bearing = (float) Math.toDegrees(results[0]);
+                        if (MapsActivity.current_measured_bearing < 0) {
+                            MapsActivity.current_measured_bearing += 360;
                         }
 
                         /* Smooth values using a 'Low Pass Filter' */
-                        mapsActivity.current_measured_bearing = mapsActivity.current_measured_bearing
+                        MapsActivity.current_measured_bearing = MapsActivity.current_measured_bearing
                                 + SMOOTHING_FACTOR_COMPASS
-                                * (mapsActivity.current_measured_bearing - mapsActivity.compass_last_measured_bearing);
+                                * (MapsActivity.current_measured_bearing - mapsActivity.compass_last_measured_bearing);
                         //Log.i("Bearing", String.valueOf (current_measured_bearing));
 
                         /*
                          * Update variables for next use (Required for Low Pass
                          * Filter)
                          */
-                        mapsActivity.compass_last_measured_bearing = mapsActivity.current_measured_bearing;
+                        mapsActivity.compass_last_measured_bearing = MapsActivity.current_measured_bearing;
 
                     }
                 }
@@ -89,5 +96,21 @@ class SensorsUtils {
                     "Magnetic field sensor unavailable. (TYPE_MAGNETIC_FIELD)");
         }
 
+    }
+
+    public void onLocationChanged(Location location) {
+        // Called when a new location is found by the network location provider.
+        //makeUseOfNewLocation(location);
+        MapsActivity.mLastKnownLocation = location;
+        ui.updateLocationUI();
+    }
+
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+    }
+
+    public void onProviderEnabled(String provider) {
+    }
+
+    public void onProviderDisabled(String provider) {
     }
 }
