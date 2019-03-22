@@ -14,10 +14,11 @@ import android.util.Log;
 class SensorsUtils implements LocationListener {
     private static final float SMOOTHING_FACTOR_COMPASS = 0.1f;
     private static final String TAG = SensorsUtils.class.getSimpleName();
-    private final UiUtils ui;
+    private UiUtils ui;
 
     SensorsUtils(UiUtils ui) {
         this.ui = ui;
+        ui.updateBearing();
     }
 
     static void InitMagnetSensors(final MapsActivity mapsActivity) {

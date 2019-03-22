@@ -61,7 +61,7 @@ class UiUtils {
 
         TextView tAccuracy = activity.findViewById(R.id.tx_acuracy);
         if (mLastKnownLocation != null) {
-            tAccuracy.setText(activity.getResources().getString(R.string.t_accuracy, mLastKnownLocation.getAccuracy()));
+            tAccuracy.setText(activity.getResources().getString(R.string.t_accuracy, Math.round(mLastKnownLocation.getAccuracy())));
         }
 
     }
@@ -69,7 +69,7 @@ class UiUtils {
     /**
      * Update Bearing TextView time period
      */
-    private void updateBearing() {
+    void updateBearing() {
         thread = new Thread() {
 
             @Override
