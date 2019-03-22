@@ -1,4 +1,4 @@
-package ru.pirogovolive.fire.pelengj;
+package ru.pirogovolive.fire.biangulator;
 
 import android.Manifest;
 import android.content.Context;
@@ -30,7 +30,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
-import static ru.pirogovolive.fire.pelengj.UiUtils.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
+import static ru.pirogovolive.fire.biangulator.UiUtils.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {

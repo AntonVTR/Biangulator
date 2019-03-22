@@ -1,11 +1,8 @@
 <resources>
-    <string name="app_name">PelengJ</string>
+    <string name="app_name">Biangulator</string>
     <string name="title_activity_maps">Map</string>
 
-    <string name="default_info_title">Default Location</string>
     <string name="default_info_snippet">No places found, because location permission is disabled.</string>
-    <string name="option_get_place">Get place</string>
-    <string name="pick_place">Choose a place</string>
 
     <string name="btn_get_clear">Clean All</string>
 
@@ -15,7 +12,6 @@
     <string name="toast_cant_define">I can\'t define your location please check the settings or avaliabitity of clear sky</string>
     <string name="t_accuracy">Accuracy: %1$d</string>
     <string name="t_azimuth">Azimuth: %1$d %2$s</string>
-    <string name="t_az_accuracy">Azim accur: </string>
     <string name="degrees">°</string>
 
 </resources>

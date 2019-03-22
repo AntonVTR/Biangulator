@@ -1,4 +1,4 @@
-package ru.pirogovolive.fire.pelengj;
+package ru.pirogovolive.fire.biangulator;
 
 import android.app.Activity;
 import android.content.Context;
@@ -10,8 +10,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import static com.google.android.gms.internal.zzahf.runOnUiThread;
-import static ru.pirogovolive.fire.pelengj.MapsActivity.mLastKnownLocation;
-import static ru.pirogovolive.fire.pelengj.MapsActivity.mMap;
+import static ru.pirogovolive.fire.biangulator.MapsActivity.mLastKnownLocation;
+import static ru.pirogovolive.fire.biangulator.MapsActivity.mMap;
 
 class UiUtils {
     static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;

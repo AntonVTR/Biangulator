@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Biangulator</string>
+    <string name="degrees">°</string>
+    <string name="t_azimuth">Азимут: %1$d %2$s</string>
+    <string name="t_accuracy">Погрешность: %1$d</string>
+    <string name="toast_cant_define">Я не могу определить положение, пожалуйста проверьте настройки и наличие открытого пространства над головой</string>
+    <string name="btn_set">Установить азимут</string>
+    <string name="btn_get_sazimuth">Взять второй азимут</string>
+    <string name="btn_get_azimuth">Взять азимут</string>
+    <string name="btn_get_clear">Очистить</string>
+    <string name="title_activity_maps">Карта</string>
+    <string name="default_info_snippet">Добавьте разрешение на использование местоположения</string>
+</resources>

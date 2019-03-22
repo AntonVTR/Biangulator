@@ -1,4 +1,4 @@
-package ru.pirogovolive.fire.pelengj;
+package ru.pirogovolive.fire.biangulator;
 
 import com.google.android.gms.maps.model.LatLng;
 
