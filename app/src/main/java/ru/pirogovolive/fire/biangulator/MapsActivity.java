@@ -239,6 +239,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         ctx = this;
         activity = this;
         ui = new UiUtils(activity, ctx);
+        ui.run();
         // Construct a GeoDataClient.
         //mGeoDataClient = Places.getGeoDataClient(this, null);
         getDeviceLocation();

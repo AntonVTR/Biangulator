@@ -18,7 +18,6 @@ class SensorsUtils implements LocationListener {
 
     SensorsUtils(UiUtils ui) {
         this.ui = ui;
-        ui.updateBearing();
     }
 
     static void InitMagnetSensors(final MapsActivity mapsActivity) {

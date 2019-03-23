@@ -9,7 +9,6 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 
-import static com.google.android.gms.internal.zzahf.runOnUiThread;
 import static ru.pirogovolive.fire.biangulator.MapsActivity.mLastKnownLocation;
 import static ru.pirogovolive.fire.biangulator.MapsActivity.mMap;
 
@@ -26,6 +25,33 @@ class UiUtils {
         this.ctx = ctx;
 
     }
+
+    void run() {
+        thread = new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    while (!thread.isInterrupted()) {
+                        Thread.sleep(1000);
+                        activity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                TextView visual_compass_value = activity.findViewById(R.id.tx_azimuth);
+                                visual_compass_value.setText(activity.getResources().getString(R.string.t_azimuth, Math
+                                        .round(MapsActivity.current_measured_bearing), ctx.getString(R.string.degrees)));
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                    Log.d(TAG, "Something went wrong during bearing update");
+                }
+            }
+        };
+
+        thread.start();
+    }
+
 
     /**
      * Updates the map's UI settings based on whether the user has granted location permission.
@@ -66,35 +92,8 @@ class UiUtils {
 
     }
 
-    /**
-     * Update Bearing TextView time period
-     */
-    void updateBearing() {
-        thread = new Thread() {
 
-            @Override
-            public void run() {
-                try {
-                    while (!thread.isInterrupted()) {
-                        Thread.sleep(1000);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                /* Update normal output */
-                                TextView visual_compass_value = activity.findViewById(R.id.tx_azimuth);
-                                visual_compass_value.setText(activity.getResources().getString(R.string.t_azimuth, Math
-                                        .round(MapsActivity.current_measured_bearing), ctx.getString(R.string.degrees)));
-                            }
-                        });
-                    }
-                } catch (InterruptedException e) {
-                    Log.d(TAG, "Something went wrong during bearing update");
-                }
-            }
-        };
 
-        thread.start();
-    }
 
     /**
      * Enable button get azimuth if accuracy is better then 14 it means you have proper GPS cover
