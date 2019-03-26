@@ -29,13 +29,14 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import static ru.pirogovolive.fire.biangulator.UiUtils.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
-
+    private FirebaseAnalytics mFirebaseAnalytics;
     private static final String KEY_LOCATION = "location";
     private static final int DEFAULT_ZOOM = 15;
     private static final String TAG = MapsActivity.class.getSimpleName();
@@ -215,6 +216,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             btn.setText(getResources().getString(R.string.btn_get_sazimuth));
             MapUtils.DrawTheLine(this, 100);
 
+            Bundle bundle = new Bundle();
+            bundle.putString(FirebaseAnalytics.Param.ITEM_LOCATION_ID, mLastKnownLocation.toString());
+            bundle.putString(FirebaseAnalytics.Param.ITEM_NAME, String.valueOf(compass_last_measured_bearing));
+            mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, bundle);
         } else if (btn.getText() == getResources().getString(R.string.btn_get_sazimuth)) {
             img.setVisibility(View.VISIBLE);
             btn.setText(getResources().getString(R.string.btn_set));
@@ -228,6 +233,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
         // Retrieve location and camera position from saved instance state.
         if (savedInstanceState != null) {
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
